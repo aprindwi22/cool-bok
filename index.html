@@ -1,20 +1,142 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Login Cool Box</title>
+  <meta charset="UTF-8">
+  <title>Cool Box Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Firebase v8 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-  <script src="login.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      background: linear-gradient(135deg, #1b1f3b, #2d325a);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+    }
+
+    .login-card {
+      width: 330px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+
+    .login-card img {
+      width: 70px;
+      margin-bottom: 10px;
+    }
+
+    .login-card h2 {
+      margin-bottom: 25px;
+      font-weight: 500;
+    }
+
+    .login-card input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-bottom: 2px solid #888;
+      background: transparent;
+      color: white;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .login-card input::placeholder {
+      color: #aaa;
+    }
+
+    .login-card button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 20px;
+      border: none;
+      border-radius: 25px;
+      background: #ff3b3b;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .login-card button:hover {
+      background: #ff1f1f;
+    }
+
+    .error {
+      margin-top: 15px;
+      color: #ff8080;
+      font-size: 13px;
+    }
+
+    .footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #bbb;
+    }
+  </style>
 </head>
 
 <body>
-  <h2>Login</h2>
 
-  <input type="email" id="email" placeholder="Email"><br><br>
-  <input type="password" id="password" placeholder="Password"><br><br>
+  <div class="login-card">
+    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+    <h2>Login Here</h2>
 
-  <button onclick="login()">Login</button>
+    <input type="email" id="email" placeholder="Enter Email">
+    <input type="password" id="password" placeholder="Enter Password">
 
-  <p id="error" style="color:red;"></p>
+    <button onclick="login()">Login</button>
+
+    <div class="error" id="errorMsg"></div>
+
+    <div class="footer">
+      Cool Box Monitoring System
+    </div>
+  </div>
+
+  <script>
+    // ================= FIREBASE CONFIG =================
+    const firebaseConfig = {
+      apiKey: "AIzaSyAJeM3MnB2dbbTNFV9htfDLJk1f8ZsIo34",
+      authDomain: "monitoring-coler-box.firebaseapp.com",
+      databaseURL: "https://monitoring-coler-box-default-rtdb.firebaseio.com",
+      projectId: "monitoring-coler-box",
+      storageBucket: "monitoring-coler-box.firebasestorage.app",
+      messagingSenderId: "496909050006",
+      appId: "1:496909050006:web:d0eb1930e5ae7f6fe962b7"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const errorMsg = document.getElementById("errorMsg");
+
+      firebase.auth().signInWithEmailAndPassword(email, password)
+        .then(() => {
+          window.location.href = "dashboard.html";
+        })
+        .catch((error) => {
+          errorMsg.innerText = error.message;
+        });
+    }
+  </script>
+
 </body>
 </html>
