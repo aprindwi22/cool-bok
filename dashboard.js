@@ -13,19 +13,78 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
+// ================= ELEMENT =================
+const tempEl = document.getElementById("temp");
+const humEl = document.getElementById("hum");
+const statusEl = document.getElementById("status");
+
+// ================= CHART =================
+const ctx = document.getElementById("tempChart").getContext("2d");
+
+let tempData = {
+  labels: [],
+  datasets: [{
+    label: "Temperature (°C)",
+    data: [],
+    borderWidth: 2,
+    fill: false,
+    tension: 0.3
+  }]
+};
+
+const tempChart = new Chart(ctx, {
+  type: "line",
+  data: tempData,
+  options: {
+    responsive: true,
+    scales: {
+      y: {
+        beginAtZero: false
+      }
+    }
+  }
+});
+
 // ================= READ TEMPERATURE =================
 database.ref("coolbox/temperature_c").on("value", (snapshot) => {
-  document.getElementById("temp").innerText = snapshot.val();
+  const temp = snapshot.val();
+  if (temp == null) return;
+
+  tempEl.innerText = temp.toFixed(1);
+
+  const time = new Date().toLocaleTimeString();
+
+  if (tempData.labels.length > 10) {
+    tempData.labels.shift();
+    tempData.datasets[0].data.shift();
+  }
+
+  tempData.labels.push(time);
+  tempData.datasets[0].data.push(temp);
+
+  tempChart.update();
 });
 
 // ================= READ HUMIDITY =================
 database.ref("coolbox/humidity").on("value", (snapshot) => {
-  document.getElementById("hum").innerText = snapshot.val();
+  humEl.innerText = snapshot.val();
 });
 
 // ================= READ STATUS =================
 database.ref("coolbox/relay_status").on("value", (snapshot) => {
-  document.getElementById("status").innerText = snapshot.val();
+  const status = snapshot.val();
+  statusEl.innerText = status;
+
+  // ===== WARNA STATUS =====
+  if (status === "MODE_18_25_ACTIVE") {
+    statusEl.style.color = "#f39c12"; // ORANGE
+  } 
+  else if (status === "MODE_8_15_ACTIVE") {
+    statusEl.style.color = "#3498db"; // BIRU
+  } 
+  else {
+    statusEl.style.color = "#aaa"; // OFF
+  }
 });
 
 // ================= BUTTON =================
