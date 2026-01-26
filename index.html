@@ -70,7 +70,6 @@
       color: white;
       font-size: 16px;
       cursor: pointer;
-      transition: 0.3s;
     }
 
     .login-card button:hover {
@@ -109,66 +108,56 @@
     </div>
   </div>
 
+  <!-- ================= SCRIPT ================= -->
   <script>
-    <script>
-  // ================= FIREBASE CONFIG =================
-  const firebaseConfig = {
-    apiKey: "AIzaSyAJeM3MnB2dbbTNFV9htfDLJk1f8ZsIo34",
-    authDomain: "monitoring-coler-box.firebaseapp.com",
-    databaseURL: "https://monitoring-coler-box-default-rtdb.firebaseio.com",
-    projectId: "monitoring-coler-box",
-    storageBucket: "monitoring-coler-box.firebasestorage.app",
-    messagingSenderId: "496909050006",
-    appId: "1:496909050006:web:d0eb1930e5ae7f6fe962b7"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyAJeM3MnB2dbbTNFV9htfDLJk1f8ZsIo34",
+      authDomain: "monitoring-coler-box.firebaseapp.com",
+      databaseURL: "https://monitoring-coler-box-default-rtdb.firebaseio.com",
+      projectId: "monitoring-coler-box",
+      storageBucket: "monitoring-coler-box.firebasestorage.app",
+      messagingSenderId: "496909050006",
+      appId: "1:496909050006:web:d0eb1930e5ae7f6fe962b7"
+    };
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
 
-  // ================= LOGIN FUNCTION =================
-  function login() {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
-    const errorMsg = document.getElementById("errorMsg");
+    function login() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const errorMsg = document.getElementById("errorMsg");
 
-    errorMsg.innerText = "";
+      errorMsg.innerText = "";
 
-    // ===== VALIDASI INPUT =====
-    if (email === "") {
-      errorMsg.innerText = "Email belum diisi";
-      return;
+      if (email === "") {
+        errorMsg.innerText = "Email belum diisi";
+        return;
+      }
+
+      if (password === "") {
+        errorMsg.innerText = "Password belum diisi";
+        return;
+      }
+
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          window.location.href = "dashboard.html";
+        })
+        .catch((error) => {
+          if (
+            error.code === "auth/wrong-password" ||
+            error.code === "auth/user-not-found" ||
+            error.code === "auth/invalid-login-credentials"
+          ) {
+            errorMsg.innerText = "Email atau password salah";
+          } else {
+            errorMsg.innerText = "Terjadi kesalahan. Coba lagi.";
+          }
+          console.log(error.code);
+        });
     }
-
-    if (password === "") {
-      errorMsg.innerText = "Password belum diisi";
-      return;
-    }
-
-    // ===== FIREBASE LOGIN =====
-    auth.signInWithEmailAndPassword(email, password)
-      .then(() => {
-        window.location.href = "dashboard.html";
-      })
-      .catch((error) => {
-
-        // ===== ERROR HANDLING MANUSIAWI =====
-        if (
-          error.code === "auth/wrong-password" ||
-          error.code === "auth/user-not-found" ||
-          error.code === "auth/invalid-login-credentials"
-        ) {
-          errorMsg.innerText = "Email atau password salah";
-        } 
-        else {
-          errorMsg.innerText = "Terjadi kesalahan. Coba lagi.";
-        }
-
-        console.error("Firebase Error:", error.code);
-      });
-  }
-</script>
   </script>
 
 </body>
 </html>
-
