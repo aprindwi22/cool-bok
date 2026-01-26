@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cool Box Dashboard</title>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+  <script src="dashboard.js"></script>
+</head>
+
+<body>
+  <h2>Cool Box Dashboard</h2>
+
+  <p>Temperature : <span id="temp">--</span> °C</p>
+  <p>Humidity    : <span id="hum">--</span> %</p>
+  <p>Status      : <span id="status">--</span></p>
+
+  <br>
+
+  <button onclick="setMode(0)">OFF</button>
+  <button onclick="setMode(1)">MODE 1 (18–25°C)</button>
+  <button onclick="setMode(2)">MODE 2 (8–15°C)</button>
+
+</body>
+</html>
