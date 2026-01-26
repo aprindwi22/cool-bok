@@ -11,7 +11,16 @@ const firebaseConfig = {
 
 // ================= INIT =================
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const database = firebase.database();
+
+// ================= CEK LOGIN =================
+auth.onAuthStateChanged((user) => {
+  if (!user) {
+    // ❌ Belum login → balik ke login
+    window.location.href = "index.html";
+  }
+});
 
 // ================= ELEMENT =================
 const tempEl = document.getElementById("temp");
@@ -38,9 +47,7 @@ const tempChart = new Chart(ctx, {
   options: {
     responsive: true,
     scales: {
-      y: {
-        beginAtZero: false
-      }
+      y: { beginAtZero: false }
     }
   }
 });
@@ -51,7 +58,6 @@ database.ref("coolbox/temperature_c").on("value", (snapshot) => {
   if (temp == null) return;
 
   tempEl.innerText = temp.toFixed(1);
-
   const time = new Date().toLocaleTimeString();
 
   if (tempData.labels.length > 10) {
@@ -61,7 +67,6 @@ database.ref("coolbox/temperature_c").on("value", (snapshot) => {
 
   tempData.labels.push(time);
   tempData.datasets[0].data.push(temp);
-
   tempChart.update();
 });
 
@@ -75,21 +80,23 @@ database.ref("coolbox/relay_status").on("value", (snapshot) => {
   const status = snapshot.val();
   statusEl.innerText = status;
 
-  // ===== WARNA STATUS =====
   if (status === "MODE_18_25_ACTIVE") {
-    statusEl.style.color = "#f39c12"; // ORANGE
-  } 
-  else if (status === "MODE_8_15_ACTIVE") {
-    statusEl.style.color = "#3498db"; // BIRU
-  } 
-  else {
-    statusEl.style.color = "#aaa"; // OFF
+    statusEl.style.color = "#f39c12";
+  } else if (status === "MODE_8_15_ACTIVE") {
+    statusEl.style.color = "#3498db";
+  } else {
+    statusEl.style.color = "#7f8c8d";
   }
 });
 
 // ================= BUTTON =================
 function setMode(mode) {
-  database.ref("coolbox").update({
-    mode: mode
+  database.ref("coolbox").update({ mode });
+}
+
+// ================= LOGOUT =================
+function logout() {
+  auth.signOut().then(() => {
+    window.location.href = "index.html";
   });
 }
