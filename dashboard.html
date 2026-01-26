@@ -3,59 +3,89 @@
 <head>
   <meta charset="UTF-8">
   <title>Cool Box Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Style sederhana -->
   <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Segoe UI", sans-serif;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      text-align: center;
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1b1f3b, #2d325a);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
     }
 
     .card {
-      background: white;
-      width: 350px;
-      margin: 30px auto;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      width: 380px;
+      background: rgba(0,0,0,0.65);
+      padding: 25px;
+      border-radius: 18px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.6);
+      text-align: center;
     }
 
     h2 {
-      margin-bottom: 10px;
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-weight: 500;
     }
 
     p {
-      font-size: 18px;
       margin: 6px 0;
+      font-size: 16px;
     }
 
     #status {
       font-weight: bold;
+      padding: 6px 12px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-top: 5px;
     }
-
-    button {
-      margin: 5px;
-      padding: 10px 15px;
-      font-size: 14px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .off { background: #aaa; color: white; }
-    .mode1 { background: #f39c12; color: white; }
-    .mode2 { background: #3498db; color: white; }
 
     canvas {
       margin-top: 20px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 25px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.3s;
+      color: white;
+    }
+
+    .off { background: #7f8c8d; }
+    .mode1 { background: #f39c12; }
+    .mode2 { background: #3498db; }
+    .logout { background: #e74c3c; margin-top: 20px; }
+
+    .btn:hover {
+      opacity: 0.85;
+    }
+
+    .footer {
+      margin-top: 15px;
+      font-size: 12px;
+      color: #bbb;
     }
   </style>
 </head>
@@ -63,23 +93,27 @@
 <body>
 
   <div class="card">
-    <h2>Cool Box Dashboard</h2>
+    <h2>❄ Cool Box Dashboard</h2>
 
-    <p>🌡 Temperature : <span id="temp">--</span> °C</p>
-    <p>💧 Humidity : <span id="hum">--</span> %</p>
-    <p>Status : <span id="status">--</span></p>
+    <p>🌡 Temperature: <span id="temp">--</span> °C</p>
+    <p>💧 Humidity: <span id="hum">--</span> %</p>
+    <p>Status:</p>
+    <span id="status">--</span>
 
-    <!-- GRAFIK SUHU -->
-    <canvas id="tempChart" height="200"></canvas>
+    <!-- Grafik -->
+    <canvas id="tempChart" height="180"></canvas>
 
-    <br>
+    <button class="btn off" onclick="setMode(0)">OFF</button>
+    <button class="btn mode1" onclick="setMode(1)">MODE 1 (18–25°C)</button>
+    <button class="btn mode2" onclick="setMode(2)">MODE 2 (8–15°C)</button>
 
-    <button class="off" onclick="setMode(0)">OFF</button>
-    <button class="mode1" onclick="setMode(1)">MODE 1 (18–25°C)</button>
-    <button class="mode2" onclick="setMode(2)">MODE 2 (8–15°C)</button>
+    <button class="btn logout" onclick="logout()">LOGOUT</button>
+
+    <div class="footer">
+      Cool Box Monitoring System
+    </div>
   </div>
 
-  <!-- Dashboard Logic -->
   <script src="dashboard.js"></script>
 
 </body>
