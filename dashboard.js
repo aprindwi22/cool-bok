@@ -17,7 +17,6 @@ const database = firebase.database();
 // ================= CEK LOGIN =================
 auth.onAuthStateChanged((user) => {
   if (!user) {
-    // ❌ Belum login → balik ke login
     window.location.href = "index.html";
   }
 });
@@ -26,6 +25,7 @@ auth.onAuthStateChanged((user) => {
 const tempEl = document.getElementById("temp");
 const humEl = document.getElementById("hum");
 const statusEl = document.getElementById("status");
+const logTable = document.getElementById("logTable");
 
 // ================= CHART =================
 const ctx = document.getElementById("tempChart").getContext("2d");
@@ -89,10 +89,68 @@ database.ref("coolbox/relay_status").on("value", (snapshot) => {
   }
 });
 
-// ================= BUTTON =================
+// ================= SET MODE =================
 function setMode(mode) {
   database.ref("coolbox").update({ mode });
 }
+
+// ================= SIMPAN MANUAL =================
+function simpanManual() {
+  Promise.all([
+    database.ref("coolbox/temperature_c").once("value"),
+    database.ref("coolbox/humidity").once("value")
+  ]).then(([tempSnap, humSnap]) => {
+
+    const temp = tempSnap.val();
+    const hum = humSnap.val();
+
+    database.ref("coolbox/logs").push({
+      temperature: temp,
+      humidity: hum,
+      timestamp: Date.now()
+    });
+
+    alert("Data berhasil disimpan!");
+  });
+}
+
+// ================= HAPUS SEMUA =================
+function hapusSemua() {
+  if (confirm("Yakin hapus semua logs?")) {
+    database.ref("coolbox/logs").remove();
+  }
+}
+
+// ================= HAPUS SATU =================
+function hapusSatu(key) {
+  database.ref("coolbox/logs/" + key).remove();
+}
+
+// ================= TAMPILKAN LOGS =================
+database.ref("coolbox/logs").on("value", (snapshot) => {
+
+  logTable.innerHTML = "";
+
+  const data = snapshot.val();
+  if (!data) return;
+
+  Object.keys(data).forEach((key) => {
+
+    const item = data[key];
+    const waktu = new Date(item.timestamp).toLocaleString();
+
+    logTable.innerHTML += `
+      <tr>
+        <td>${waktu}</td>
+        <td>${item.temperature}</td>
+        <td>${item.humidity}</td>
+        <td>
+          <button onclick="hapusSatu('${key}')">Hapus</button>
+        </td>
+      </tr>
+    `;
+  });
+});
 
 // ================= LOGOUT =================
 function logout() {
