@@ -107,7 +107,7 @@ function simpanManual() {
     database.ref("coolbox/logs").push({
       temperature: temp,
       humidity: hum,
-      timestamp: Date.now()
+      timestamp: firebase.database.ServerValue.TIMESTAMP
     });
 
     alert("Data berhasil disimpan!");
@@ -137,7 +137,9 @@ database.ref("coolbox/logs").on("value", (snapshot) => {
   Object.keys(data).forEach((key) => {
 
     const item = data[key];
-    const waktu = new Date(item.timestamp).toLocaleString();
+    const waktu = item.timestamp 
+  ? new Date(item.timestamp).toLocaleString('id-ID')
+  : "-";
 
     logTable.innerHTML += `
       <tr>
@@ -158,3 +160,4 @@ function logout() {
     window.location.href = "index.html";
   });
 }
+
