@@ -1,4 +1,32 @@
-<!DOCTYPE html>
+[13.11, 26/1/2026] aprindwi: #include <WiFi.h>
+#include <Firebase_ESP_Client.h>
+#include <Wire.h>
+#include <U8g2lib.h>
+#include "DHTesp.h"
+
+/* ================= WIFI ================= */
+#define WIFI_SSID "External"
+#define WIFI_PASSWORD "01202205006"
+
+/* ================= FIREBASE ================= */
+#define API_KEY "AIzaSyAJeM3MnB2dbbTNFV9htfDLJk1f8ZsIo34"
+#define DATABASE_URL "https://monitoring-coler-box-default-rtdb.firebaseio.com/"
+#define USER_EMAIL "aprin_udah_makan@gmail.com"
+#define USER_PASSWORD "01202205006"
+
+/* ================= DHT22 ================= */
+#define DHT_PIN 23
+DHTesp dht;
+
+/* ================= RELAY ================= */
+#define RELAY1_PIN 26   // MODE 18–25 °C
+#define RELAY2_PIN 27   // MODE 8–15 °C
+
+#define RELAY_ON  HIGH
+#define RELAY_OFF LOW
+
+/* ==========…
+[14.57, 28/2/2026] aprindwi: <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
@@ -14,40 +42,31 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: "Segoe UI", sans-serif;
-    }
+    * { box-sizing: border-box; font-family: "Segoe UI", sans-serif; }
 
     body {
       margin: 0;
-      min-height: 100vh;
       background: linear-gradient(135deg, #1b1f3b, #2d325a);
       display: flex;
       justify-content: center;
       align-items: center;
       color: white;
+      padding: 20px;
     }
 
     .card {
-      width: 380px;
-      background: rgba(0,0,0,0.65);
+      width: 95%;
+      max-width: 800px;
+      background: rgba(0,0,0,0.7);
       padding: 25px;
       border-radius: 18px;
       box-shadow: 0 0 30px rgba(0,0,0,0.6);
       text-align: center;
     }
 
-    h2 {
-      margin-top: 0;
-      margin-bottom: 15px;
-      font-weight: 500;
-    }
+    h2 { margin-bottom: 15px; }
 
-    p {
-      margin: 6px 0;
-      font-size: 16px;
-    }
+    p { margin: 6px 0; font-size: 16px; }
 
     #status {
       font-weight: bold;
@@ -57,29 +76,40 @@
       margin-top: 5px;
     }
 
-    canvas {
-      margin-top: 20px;
-    }
+    canvas { margin-top: 20px; }
 
     .btn {
       width: 100%;
-      padding: 12px;
-      margin-top: 10px;
+      padding: 10px;
+      margin-top: 8px;
       border: none;
-      border-radius: 25px;
+      border-radius: 20px;
       font-size: 14px;
       cursor: pointer;
-      transition: 0.3s;
       color: white;
     }
 
     .off { background: #7f8c8d; }
     .mode1 { background: #f39c12; }
     .mode2 { background: #3498db; }
-    .logout { background: #e74c3c; margin-top: 20px; }
+    .save { background: #2ecc71; }
+    .delete { background: #c0392b; }
+    .logout { background: #e74c3c; }
 
-    .btn:hover {
-      opacity: 0.85;
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    table, th, td {
+      border: 1px solid #555;
+    }
+
+    th, td {
+      padding: 6px;
+      text-align: center;
     }
 
     .footer {
@@ -101,11 +131,30 @@
     <span id="status">--</span>
 
     <!-- Grafik -->
-    <canvas id="tempChart" height="180"></canvas>
+    <canvas id="tempChart" height="120"></canvas>
 
+    <!-- MODE -->
     <button class="btn off" onclick="setMode(0)">OFF</button>
-    <button class="btn mode1" onclick="setMode(1)">MODE 1 (18–25°C)</button>
-    <button class="btn mode2" onclick="setMode(2)">MODE 2 (8–15°C)</button>
+    <button class="btn mode1" onclick="setMode(1)">MODE 1</button>
+    <button class="btn mode2" onclick="setMode(2)">MODE 2</button>
+
+    <!-- FITUR BARU -->
+    <button class="btn save" onclick="simpanManual()">Simpan Data Sekarang</button>
+    <button class="btn delete" onclick="hapusSemua()">Hapus Semua Logs</button>
+
+    <!-- TABEL RIWAYAT -->
+    <h3 style="margin-top:20px;">Riwayat Data</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Waktu</th>
+          <th>Suhu</th>
+          <th>Humidity</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="logTable"></tbody>
+    </table>
 
     <button class="btn logout" onclick="logout()">LOGOUT</button>
 
@@ -115,6 +164,5 @@
   </div>
 
   <script src="dashboard.js"></script>
-
 </body>
 </html>
