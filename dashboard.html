@@ -1,31 +1,3 @@
-#include <WiFi.h>
-#include <Firebase_ESP_Client.h>
-#include <Wire.h>
-#include <U8g2lib.h>
-#include "DHTesp.h"
-
-/* ================= WIFI ================= */
-#define WIFI_SSID "External"
-#define WIFI_PASSWORD "01202205006"
-
-/* ================= FIREBASE ================= */
-#define API_KEY "AIzaSyAJeM3MnB2dbbTNFV9htfDLJk1f8ZsIo34"
-#define DATABASE_URL "https://monitoring-coler-box-default-rtdb.firebaseio.com/"
-#define USER_EMAIL "aprin_udah_makan@gmail.com"
-#define USER_PASSWORD "01202205006"
-
-/* ================= DHT22 ================= */
-#define DHT_PIN 23
-DHTesp dht;
-
-/* ================= RELAY ================= */
-#define RELAY1_PIN 26   // MODE 18–25 °C
-#define RELAY2_PIN 27   // MODE 8–15 °C
-
-#define RELAY_ON  HIGH
-#define RELAY_OFF LOW
-
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -166,6 +138,3 @@ DHTesp dht;
   <script src="dashboard.js"></script>
 </body>
 </html>
-
-
-
