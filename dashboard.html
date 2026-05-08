@@ -66,6 +66,7 @@
     .mode2 { background: #3498db; }
     .save { background: #2ecc71; }
     .delete { background: #c0392b; }
+    .export { background: #8e44ad; }
     .logout { background: #e74c3c; }
 
     table {
@@ -116,8 +117,12 @@
     <button class="btn save" onclick="simpanManual()">Simpan Data Sekarang</button>
     <button class="btn delete" onclick="hapusSemua()">Hapus Semua Logs</button>
 
+    <!-- DOWNLOAD CSV -->
+    <button class="btn export" onclick="exportCSV()">Download CSV</button>
+
     <!-- LOG -->
     <h3 style="margin-top:20px;">Riwayat Data</h3>
+
     <table>
       <thead>
         <tr>
@@ -127,6 +132,7 @@
           <th>Aksi</th>
         </tr>
       </thead>
+
       <tbody id="logTable"></tbody>
     </table>
 
@@ -138,5 +144,6 @@
   </div>
 
   <script src="dashboard.js"></script>
+
 </body>
 </html>
