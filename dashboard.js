@@ -1,133 +1,132 @@
-// ================= FIREBASE CONFIG =================
+// ================= FIREBASE =================
 const firebaseConfig = {
   apiKey: "AIzaSyAJeM3MnB2dbbTNFV9htfDLJk1f8ZsIo34",
   authDomain: "monitoring-coler-box.firebaseapp.com",
   databaseURL: "https://monitoring-coler-box-default-rtdb.firebaseio.com",
   projectId: "monitoring-coler-box",
-  storageBucket: "monitoring-coler-box.firebasestorage.app",
-  messagingSenderId: "496909050006",
-  appId: "1:496909050006:web:d0eb1930e5ae7f6fe962b7"
 };
 
-// ================= INIT =================
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
 const db = firebase.database();
 
 // ================= ELEMENT =================
 const tempEl = document.getElementById("temp");
 const statusEl = document.getElementById("status");
-const logEl = document.getElementById("logTable");
+const logTable = document.getElementById("logTable");
 
-// ================= LOGIN CHECK =================
-auth.onAuthStateChanged((user) => {
-  if (!user) {
-    window.location.href = "index.html";
+// ================= CHART =================
+const ctx = document.getElementById("tempChart").getContext("2d");
+
+const chart = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: [],
+    datasets: [{
+      label: "Suhu",
+      data: [],
+      borderColor: "cyan",
+      fill: false
+    }]
   }
 });
 
 // ================= MODE =================
-let currentMode = 0;
+let modeNow = 0;
 
-db.ref("coolbox/mode").on("value", (snap) => {
-  currentMode = Number(snap.val()) || 0;
+db.ref("coolbox/mode").on("value", s => {
+  modeNow = Number(s.val()) || 0;
 });
 
-// ================= TEMPERATURE =================
-db.ref("coolbox/temperature_c").on("value", (snap) => {
-  const temp = parseFloat(snap.val());
+// ================= TEMP =================
+db.ref("coolbox/temperature_c").on("value", s => {
+  const temp = parseFloat(s.val());
   if (isNaN(temp)) return;
 
-  if (tempEl) tempEl.innerText = temp.toFixed(1);
+  tempEl.innerText = temp.toFixed(1);
 
-  updateStatus(temp);
+  // chart update
+  const time = new Date().toLocaleTimeString();
+
+  chart.data.labels.push(time);
+  chart.data.datasets[0].data.push(temp);
+
+  if (chart.data.labels.length > 15) {
+    chart.data.labels.shift();
+    chart.data.datasets[0].data.shift();
+  }
+
+  chart.update();
+
+  // status
+  if (modeNow === 0) statusEl.innerText = "OFF";
+  else if (temp > 8) statusEl.innerText = "COOLING";
+  else statusEl.innerText = "STABLE";
 });
 
-// ================= STATUS LOGIC =================
-function updateStatus(temp) {
-  if (!statusEl) return;
+// ================= LOG =================
+db.ref("coolbox/logs").on("value", snap => {
+  logTable.innerHTML = "";
 
-  let status = "STABLE";
-
-  if (currentMode === 0) {
-    status = "OFF";
-  } 
-  else if (currentMode === 1) {
-    status = temp > 8 ? "COOLING" : "STABLE";
-  } 
-  else if (currentMode === 2) {
-    status = temp > 15 ? "COOLING" : "STABLE";
-  }
-
-  if (temp >= 30) {
-    status = "WARNING";
-  }
-
-  statusEl.innerText = status;
-}
-
-// ================= LOG DATA =================
-db.ref("coolbox/logs").on("value", (snap) => {
-  if (!logEl) return;
-
-  logEl.innerHTML = "";
-
-  snap.forEach((child) => {
+  snap.forEach(child => {
     const d = child.val();
 
     const waktu = d.timestamp
-      ? new Date(d.timestamp).toLocaleString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-          day: "2-digit",
-          month: "2-digit"
-        })
-      : "--";
+      ? new Date(d.timestamp).toLocaleString("id-ID")
+      : "-";
 
-    const suhu = d.temperature !== undefined ? Number(d.temperature).toFixed(1) : "--";
-    const mode = d.mode ?? "--";
-    const aksi = d.peltier ? "ON" : "OFF";
-
-    logEl.innerHTML += `
+    logTable.innerHTML += `
       <tr>
         <td>${waktu}</td>
-        <td>${suhu}</td>
-        <td>${mode}</td>
-        <td>${aksi}</td>
+        <td>${d.temperature ?? "-"}</td>
+        <td>${d.mode ?? "-"}</td>
+        <td>${d.peltier ? "ON" : "OFF"}</td>
       </tr>
     `;
   });
 });
 
-// ================= SET MODE =================
-function setMode(mode) {
-  db.ref("coolbox").update({ mode });
+// ================= MODE =================
+function setMode(m) {
+  db.ref("coolbox").update({ mode: m });
 }
 
-// ================= SIMPAN MANUAL =================
+// ================= SIMPAN =================
 function simpanManual() {
-  db.ref("coolbox").once("value").then((snap) => {
-    const d = snap.val();
+  db.ref("coolbox").once("value").then(s => {
+    const d = s.val();
 
     db.ref("coolbox/logs").push({
       temperature: d.temperature_c,
       mode: d.mode,
       peltier: d.peltier,
-      timestamp: firebase.database.ServerValue.TIMESTAMP
+      timestamp: Date.now()
     });
   });
 }
 
-// ================= HAPUS LOG =================
+// ================= HAPUS =================
 function hapusSemua() {
-  if (confirm("Hapus semua data?")) {
-    db.ref("coolbox/logs").remove();
-  }
+  db.ref("coolbox/logs").remove();
 }
 
-// ================= LOGOUT =================
-function logout() {
-  auth.signOut().then(() => {
-    window.location.href = "index.html";
+// ================= EXPORT (FIXED) =================
+function exportExcel() {
+  db.ref("coolbox/logs").once("value").then(snap => {
+    const data = snap.val();
+    if (!data) return alert("Kosong");
+
+    let csv = "Waktu,Suhu,Mode,Aksi\n";
+
+    Object.values(data).forEach(d => {
+      csv += ${new Date(d.timestamp).toLocaleString()},${d.temperature},${d.mode},${d.peltier ? "ON":"OFF"}\n;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "coolbox.csv";
+    a.click();
   });
 }
