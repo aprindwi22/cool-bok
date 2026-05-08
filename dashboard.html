@@ -10,52 +10,133 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
-  <!-- Chart -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    body { font-family: Arial; background:#1b1f3b; color:white; padding:20px; }
-    .card { max-width:800px; margin:auto; background:#000000aa; padding:20px; border-radius:15px; }
-    button { width:100%; margin-top:8px; padding:10px; border:none; border-radius:10px; cursor:pointer; }
-    .off{background:#777}.mode1{background:#f39c12}.mode2{background:#3498db}
-    .save{background:#2ecc71}.delete{background:#c0392b}.export{background:#8e44ad}
+    * { box-sizing: border-box; font-family: "Segoe UI", sans-serif; }
+
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #1b1f3b, #2d325a);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      padding: 20px;
+    }
+
+    .card {
+      width: 95%;
+      max-width: 800px;
+      background: rgba(0,0,0,0.7);
+      padding: 25px;
+      border-radius: 18px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+
+    h2 { margin-bottom: 15px; }
+
+    p { margin: 6px 0; font-size: 16px; }
+
+    #status {
+      font-weight: bold;
+      padding: 6px 12px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-top: 5px;
+    }
+
+    canvas { margin-top: 20px; }
+
+    .btn {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border: none;
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+      color: white;
+    }
+
+    .off { background: #7f8c8d; }
+    .mode1 { background: #f39c12; }
+    .mode2 { background: #3498db; }
+    .save { background: #2ecc71; }
+    .delete { background: #c0392b; }
+    .logout { background: #e74c3c; }
+
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    table, th, td {
+      border: 1px solid #555;
+    }
+
+    th, td {
+      padding: 6px;
+      text-align: center;
+    }
+
+    .footer {
+      margin-top: 15px;
+      font-size: 12px;
+      color: #bbb;
+    }
   </style>
 </head>
 
 <body>
 
-<div class="card">
+  <div class="card">
+    <h2>❄️ Cool Box Dashboard</h2>
 
-  <h2>Cool Box Dashboard</h2>
+    <!-- SUHU -->
+    <p>🌡️ Temperature: <span id="temp">--</span> °C</p>
 
-  <p>Temp: <span id="temp">--</span> °C</p>
-  <p>Status: <span id="status">--</span></p>
+    <!-- STATUS -->
+    <p>Status:</p>
+    <span id="status">--</span>
 
-  <canvas id="tempChart"></canvas>
+    <!-- GRAFIK -->
+    <canvas id="tempChart" height="120"></canvas>
 
-  <button class="off" onclick="setMode(0)">OFF</button>
-  <button class="mode1" onclick="setMode(1)">MODE 1</button>
-  <button class="mode2" onclick="setMode(2)">MODE 2</button>
+    <!-- MODE -->
+    <button class="btn off" onclick="setMode(0)">OFF</button>
+    <button class="btn mode1" onclick="setMode(1)">MODE 1</button>
+    <button class="btn mode2" onclick="setMode(2)">MODE 2</button>
 
-  <button class="save" onclick="simpanManual()">Simpan</button>
-  <button class="delete" onclick="hapusSemua()">Hapus</button>
-  <button class="export" onclick="exportExcel()">Export Excel</button>
+    <!-- FITUR -->
+    <button class="btn save" onclick="simpanManual()">Simpan Data Sekarang</button>
+    <button class="btn delete" onclick="hapusSemua()">Hapus Semua Logs</button>
 
-  <table border="1" width="100%" style="margin-top:10px;">
-    <thead>
-      <tr>
-        <th>Waktu</th>
-        <th>Suhu</th>
-        <th>Mode</th>
-        <th>Aksi</th>
-      </tr>
-    </thead>
-    <tbody id="logTable"></tbody>
-  </table>
+    <!-- LOG -->
+    <h3 style="margin-top:20px;">Riwayat Data</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Waktu</th>
+          <th>Suhu</th>
+          <th>Mode</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="logTable"></tbody>
+    </table>
 
-</div>
+    <button class="btn logout" onclick="logout()">LOGOUT</button>
 
-<script src="dashboard.js"></script>
+    <div class="footer">
+      Cool Box Monitoring System
+    </div>
+  </div>
 
+  <script src="dashboard.js"></script>
 </body>
 </html>
