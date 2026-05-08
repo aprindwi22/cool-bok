@@ -17,9 +17,11 @@ const database = firebase.database();
 
 // ================= CEK LOGIN =================
 auth.onAuthStateChanged((user) => {
+
   if (!user) {
     window.location.href = "index.html";
   }
+
 });
 
 // ================= ELEMENT =================
@@ -58,7 +60,9 @@ const tempChart = new Chart(ctx, {
 let currentMode = 0;
 
 database.ref("coolbox/mode").on("value", (snapshot) => {
+
   currentMode = snapshot.val();
+
 });
 
 // ================= READ TEMPERATURE =================
@@ -74,8 +78,10 @@ database.ref("coolbox/temperature_c").on("value", (snapshot) => {
   const time = new Date().toLocaleTimeString();
 
   if (tempData.labels.length > 10) {
+
     tempData.labels.shift();
     tempData.datasets[0].data.shift();
+
   }
 
   tempData.labels.push(time);
@@ -101,14 +107,21 @@ database.ref("coolbox/temperature_c").on("value", (snapshot) => {
   statusEl.innerText = status;
 
   if (status === "COOLING") {
+
     statusEl.style.color = "#f39c12";
+
   }
   else if (status === "COLD") {
+
     statusEl.style.color = "#3498db";
+
   }
   else {
+
     statusEl.style.color = "#7f8c8d";
+
   }
+
 });
 
 // ================= SET MODE =================
@@ -189,17 +202,20 @@ database.ref("coolbox/logs").on("value", (snapshot) => {
 
 });
 
-//================= EXPORT CSV =================
+// ================= EXPORT CSV =================
 function exportCSV() {
 
-  database.ref("coolbox/logs").once("value")
+  database.ref("coolbox/logs")
+    .once("value")
     .then((snapshot) => {
 
       const data = snapshot.val();
 
       if (!data) {
+
         alert("Data kosong!");
         return;
+
       }
 
       let csvContent = "Waktu,Suhu,Mode,Aksi\n";
@@ -227,33 +243,29 @@ function exportCSV() {
           suhu + "," +
           modeText + "," +
           aksi + "\n";
+
       });
 
-      // ===== BUAT FILE =====
+      // ===== DOWNLOAD FILE =====
       const blob = new Blob(
         [csvContent],
         { type: "text/csv;charset=utf-8;" }
       );
 
-      // ===== KHUSUS ANDROID =====
-      const reader = new FileReader();
+      const url = URL.createObjectURL(blob);
 
-      reader.onload = function() {
+      const link = document.createElement("a");
 
-        const link = document.createElement("a");
+      link.href = url;
+      link.download = "coolbox_logs.csv";
 
-        link.href = reader.result;
+      document.body.appendChild(link);
 
-        link.download = "coolbox_logs.csv";
+      link.click();
 
-        document.body.appendChild(link);
+      document.body.removeChild(link);
 
-        link.click();
-
-        document.body.removeChild(link);
-      };
-
-      reader.readAsDataURL(blob);
+      URL.revokeObjectURL(url);
 
     })
     .catch((error) => {
@@ -263,8 +275,6 @@ function exportCSV() {
       alert("Gagal export CSV");
 
     });
-
-}
 
 }
 
