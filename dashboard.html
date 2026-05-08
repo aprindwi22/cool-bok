@@ -14,68 +14,11 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    * { box-sizing: border-box; font-family: "Segoe UI", sans-serif; }
-
-    body {
-      margin: 0;
-      background: linear-gradient(135deg, #1b1f3b, #2d325a);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      padding: 20px;
-    }
-
-    .card {
-      width: 95%;
-      max-width: 800px;
-      background: rgba(0,0,0,0.7);
-      padding: 25px;
-      border-radius: 18px;
-      text-align: center;
-    }
-
-    h2 { margin-bottom: 15px; }
-
-    p { margin: 6px 0; font-size: 16px; }
-
-    #status {
-      font-weight: bold;
-      padding: 6px 12px;
-      border-radius: 20px;
-      display: inline-block;
-    }
-
-    .btn {
-      width: 100%;
-      padding: 10px;
-      margin-top: 8px;
-      border: none;
-      border-radius: 20px;
-      cursor: pointer;
-      color: white;
-    }
-
-    .off { background: #7f8c8d; }
-    .mode1 { background: #f39c12; }
-    .mode2 { background: #3498db; }
-    .save { background: #2ecc71; }
-    .delete { background: #c0392b; }
-    .export { background: #8e44ad; }
-    .logout { background: #e74c3c; }
-
-    table {
-      width: 100%;
-      margin-top: 20px;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    th, td {
-      border: 1px solid #555;
-      padding: 6px;
-      text-align: center;
-    }
+    body { font-family: Arial; background:#1b1f3b; color:white; padding:20px; }
+    .card { max-width:800px; margin:auto; background:#000000aa; padding:20px; border-radius:15px; }
+    button { width:100%; margin-top:8px; padding:10px; border:none; border-radius:10px; cursor:pointer; }
+    .off{background:#777}.mode1{background:#f39c12}.mode2{background:#3498db}
+    .save{background:#2ecc71}.delete{background:#c0392b}.export{background:#8e44ad}
   </style>
 </head>
 
@@ -83,22 +26,22 @@
 
 <div class="card">
 
-  <h2>❄️ Cool Box Dashboard</h2>
+  <h2>Cool Box Dashboard</h2>
 
-  <p>🌡️ Temperature: <span id="temp">--</span> °C</p>
-
+  <p>Temp: <span id="temp">--</span> °C</p>
   <p>Status: <span id="status">--</span></p>
 
-  <button class="btn off" onclick="setMode(0)">OFF</button>
-  <button class="btn mode1" onclick="setMode(1)">MODE 1</button>
-  <button class="btn mode2" onclick="setMode(2)">MODE 2</button>
+  <canvas id="tempChart"></canvas>
 
-  <button class="btn save" onclick="simpanManual()">Simpan Data</button>
-  <button class="btn delete" onclick="hapusSemua()">Hapus Log</button>
-  <button class="btn export" onclick="exportExcel()">Export Excel</button>
+  <button class="off" onclick="setMode(0)">OFF</button>
+  <button class="mode1" onclick="setMode(1)">MODE 1</button>
+  <button class="mode2" onclick="setMode(2)">MODE 2</button>
 
-  <h3>Riwayat</h3>
-  <table>
+  <button class="save" onclick="simpanManual()">Simpan</button>
+  <button class="delete" onclick="hapusSemua()">Hapus</button>
+  <button class="export" onclick="exportExcel()">Export Excel</button>
+
+  <table border="1" width="100%" style="margin-top:10px;">
     <thead>
       <tr>
         <th>Waktu</th>
@@ -110,53 +53,9 @@
     <tbody id="logTable"></tbody>
   </table>
 
-  <button class="btn logout" onclick="logout()">LOGOUT</button>
-
 </div>
 
 <script src="dashboard.js"></script>
-
-<!-- ================= EXPORT FIX ================= -->
-<script>
-function exportExcel() {
-  const db = firebase.database();
-
-  db.ref("coolbox/logs").once("value").then((snapshot) => {
-    const data = snapshot.val();
-
-    if (!data) {
-      alert("Data kosong");
-      return;
-    }
-
-    let csv = "Waktu,Suhu,Mode,Aksi\n";
-
-    Object.keys(data).forEach((key) => {
-      const item = data[key];
-
-      const waktu = item.timestamp
-        ? new Date(item.timestamp).toLocaleString("id-ID")
-        : "-";
-
-      const suhu = item.temperature ?? "-";
-      const mode = item.mode ?? "-";
-      const aksi = item.peltier ? "ON" : "OFF";
-
-      csv += ${waktu},${suhu},${mode},${aksi}\n;
-    });
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "coolbox_data.csv";
-    a.click();
-
-    URL.revokeObjectURL(url);
-  });
-}
-</script>
 
 </body>
 </html>
