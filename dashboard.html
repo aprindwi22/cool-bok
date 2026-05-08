@@ -66,6 +66,7 @@
     .mode2 { background: #3498db; }
     .save { background: #2ecc71; }
     .delete { background: #c0392b; }
+    .export { background: #8e44ad; }   /* 🔥 tombol baru */
     .logout { background: #e74c3c; }
 
     table {
@@ -116,6 +117,9 @@
     <button class="btn save" onclick="simpanManual()">Simpan Data Sekarang</button>
     <button class="btn delete" onclick="hapusSemua()">Hapus Semua Logs</button>
 
+    <!-- 🔥 EXPORT EXCEL -->
+    <button class="btn export" onclick="exportExcel()">Export Excel</button>
+
     <!-- LOG -->
     <h3 style="margin-top:20px;">Riwayat Data</h3>
     <table>
@@ -138,5 +142,47 @@
   </div>
 
   <script src="dashboard.js"></script>
+
+  <!-- 🔥 EXPORT SCRIPT (AMAN TANPA MERUSAK JS UTAMA) -->
+  <script>
+    function exportExcel() {
+      const db = firebase.database();
+
+      db.ref("coolbox/logs").once("value", (snapshot) => {
+        const data = snapshot.val();
+
+        if (!data) {
+          alert("Data kosong");
+          return;
+        }
+
+        let csv = "Waktu,Suhu,Mode\n";
+
+        Object.keys(data).forEach((key) => {
+          const item = data[key];
+
+          const waktu = item.timestamp
+            ? new Date(item.timestamp).toLocaleString("id-ID")
+            : "-";
+
+          const suhu = item.temperature ?? "-";
+          const mode = item.mode ?? "-";
+
+          csv += ${waktu},${suhu},${mode}\n;
+        });
+
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "coolbox_data.csv";
+        a.click();
+
+        URL.revokeObjectURL(url);
+      });
+    }
+  </script>
+
 </body>
 </html>
