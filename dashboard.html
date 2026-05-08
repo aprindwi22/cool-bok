@@ -66,7 +66,6 @@
     .mode2 { background: #3498db; }
     .save { background: #2ecc71; }
     .delete { background: #c0392b; }
-    .export { background: #9b59b6; }
     .logout { background: #e74c3c; }
 
     table {
@@ -98,11 +97,14 @@
   <div class="card">
     <h2>❄️ Cool Box Dashboard</h2>
 
+    <!-- SUHU -->
     <p>🌡️ Temperature: <span id="temp">--</span> °C</p>
 
+    <!-- STATUS -->
     <p>Status:</p>
     <span id="status">--</span>
 
+    <!-- GRAFIK -->
     <canvas id="tempChart" height="120"></canvas>
 
     <!-- MODE -->
@@ -114,9 +116,7 @@
     <button class="btn save" onclick="simpanManual()">Simpan Data Sekarang</button>
     <button class="btn delete" onclick="hapusSemua()">Hapus Semua Logs</button>
 
-    <!-- 🔥 EXPORT EXCEL -->
-    <button class="btn export" onclick="exportCSV()">EXPORT EXCEL</button>
-
+    <!-- LOG -->
     <h3 style="margin-top:20px;">Riwayat Data</h3>
     <table>
       <thead>
@@ -124,6 +124,7 @@
           <th>Waktu</th>
           <th>Suhu</th>
           <th>Mode</th>
+          <th>Aksi</th>
         </tr>
       </thead>
       <tbody id="logTable"></tbody>
@@ -137,6 +138,5 @@
   </div>
 
   <script src="dashboard.js"></script>
-
 </body>
 </html>
