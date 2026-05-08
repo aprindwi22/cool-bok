@@ -189,11 +189,10 @@ database.ref("coolbox/logs").on("value", (snapshot) => {
 
 });
 
-// ================= EXPORT CSV =================
+//================= EXPORT CSV =================
 function exportCSV() {
 
-  database.ref("coolbox/logs")
-    .once("value")
+  database.ref("coolbox/logs").once("value")
     .then((snapshot) => {
 
       const data = snapshot.val();
@@ -203,7 +202,7 @@ function exportCSV() {
         return;
       }
 
-      let csv = "Waktu,Suhu,Mode,Aksi\n";
+      let csvContent = "Waktu,Suhu,Mode,Aksi\n";
 
       Object.keys(data).forEach((key) => {
 
@@ -223,32 +222,49 @@ function exportCSV() {
 
         const aksi = item.aksi || "-";
 
-        csv += "${waktu}","${suhu}","${modeText}","${aksi}"\n;
-
+        csvContent +=
+          waktu + "," +
+          suhu + "," +
+          modeText + "," +
+          aksi + "\n";
       });
 
-      // ===== DOWNLOAD FILE =====
+      // ===== BUAT FILE =====
       const blob = new Blob(
-        [csv],
+        [csvContent],
         { type: "text/csv;charset=utf-8;" }
       );
 
-      const url = URL.createObjectURL(blob);
+      // ===== KHUSUS ANDROID =====
+      const reader = new FileReader();
 
-      const link = document.createElement("a");
+      reader.onload = function() {
 
-      link.href = url;
-      link.download = "coolbox_logs.csv";
+        const link = document.createElement("a");
 
-      document.body.appendChild(link);
+        link.href = reader.result;
 
-      link.click();
+        link.download = "coolbox_logs.csv";
 
-      document.body.removeChild(link);
+        document.body.appendChild(link);
 
-      URL.revokeObjectURL(url);
+        link.click();
+
+        document.body.removeChild(link);
+      };
+
+      reader.readAsDataURL(blob);
+
+    })
+    .catch((error) => {
+
+      console.log(error);
+
+      alert("Gagal export CSV");
 
     });
+
+}
 
 }
 
