@@ -13,27 +13,32 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ================= ELEMENT =================
+// ================= ELEMENT (WAJIB SESUAI HTML) =================
 const tempEl = document.getElementById("temp");
 const timeEl = document.getElementById("time");
 const modeEl = document.getElementById("mode");
 const statusEl = document.getElementById("status");
-const logEl = document.getElementById("log");
+const logEl = document.getElementById("logTable");
 
-// ================= GLOBAL =================
+// ================= STATE =================
 let currentMode = 0;
 
-// ================= TIME REALTIME =================
-setInterval(() => {
+// ================= TIME (NO SECOND) =================
+function updateTime() {
   const now = new Date();
 
   const jam = String(now.getHours()).padStart(2, '0');
   const menit = String(now.getMinutes()).padStart(2, '0');
 
-  timeEl.innerText = ${jam}:${menit};
-}, 1000);
+  if (timeEl) {
+    timeEl.innerText = ${jam}:${menit};
+  }
+}
 
-// ================= TEMPERATURE =================
+setInterval(updateTime, 1000);
+updateTime();
+
+// ================= TEMPERATURE (DS18B20) =================
 db.ref("coolbox/temperature_c").on("value", (snap) => {
   let temp = snap.val();
 
@@ -54,48 +59,47 @@ db.ref("coolbox/mode").on("value", (snap) => {
   currentMode = parseInt(mode);
   if (isNaN(currentMode)) currentMode = 0;
 
-  if (currentMode === 0) modeEl.innerText = "OFF";
-  else if (currentMode === 1) modeEl.innerText = "2–8°C";
-  else if (currentMode === 2) modeEl.innerText = "8–15°C";
-  else modeEl.innerText = "UNKNOWN";
+  if (modeEl) {
+    if (currentMode === 0) modeEl.innerText = "OFF";
+    else if (currentMode === 1) modeEl.innerText = "2–8°C";
+    else if (currentMode === 2) modeEl.innerText = "8–15°C";
+    else modeEl.innerText = "UNKNOWN";
+  }
 });
 
-// ================= STATUS LOGIC MEDIS =================
+// ================= STATUS LOGIC (ICU STYLE) =================
 function updateStatus(temp) {
 
   let status = "STABLE";
-  let colorClass = "stable";
+  let color = "#2ecc71";
 
   if (currentMode === 0) {
     status = "OFF";
-    colorClass = "off";
+    color = "#7f8c8d";
   }
 
   else if (currentMode === 1) {
-    if (temp > 8) {
-      status = "COOLING";
-      colorClass = "cooling";
-    }
+    if (temp > 8) status = "COOLING";
+    else status = "STABLE";
+    color = "#3498db";
   }
 
   else if (currentMode === 2) {
-    if (temp > 15) {
-      status = "COOLING";
-      colorClass = "cooling";
-    }
+    if (temp > 15) status = "COOLING";
+    else status = "STABLE";
+    color = "#3498db";
   }
 
   if (temp < 5 && currentMode !== 0) {
     status = "COLD";
-    colorClass = "cooling";
+    color = "#00ffff";
   }
 
   statusEl.innerText = status;
-
-  statusEl.className = "status " + colorClass;
+  statusEl.style.color = color;
 }
 
-// ================= LOG DATA =================
+// ================= LOG TABLE =================
 db.ref("coolbox/logs").on("value", (snap) => {
 
   logEl.innerHTML = "";
@@ -107,17 +111,13 @@ db.ref("coolbox/logs").on("value", (snap) => {
       ? new Date(d.timestamp).toLocaleString("id-ID")
       : "-";
 
-    const suhu = (d.temperature !== undefined)
+    const suhu = d.temperature !== undefined
       ? parseFloat(d.temperature).toFixed(1)
       : "-";
 
-    const mode = (d.mode !== undefined)
-      ? d.mode
-      : "-";
+    const mode = d.mode ?? "-";
 
-    const aksi = (d.peltier === true)
-      ? "ON"
-      : "OFF";
+    const aksi = d.peltier === true ? "ON" : "OFF";
 
     logEl.innerHTML += `
       <tr>
