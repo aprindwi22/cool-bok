@@ -11,121 +11,151 @@ const firebaseConfig = {
 
 // ================= INIT =================
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const auth = firebase.auth();
+const database = firebase.database();
+
+// ================= CEK LOGIN =================
+auth.onAuthStateChanged((user) => {
+  if (!user) {
+    window.location.href = "index.html";
+  }
+});
 
 // ================= ELEMENT =================
 const tempEl = document.getElementById("temp");
-const timeEl = document.getElementById("time");
-const modeEl = document.getElementById("mode");
 const statusEl = document.getElementById("status");
-const logEl = document.getElementById("log");
+const logTable = document.getElementById("logTable");
 
-// ================= GLOBAL =================
-let currentMode = 0;
+// ================= CHART =================
+const ctx = document.getElementById("tempChart").getContext("2d");
 
-// ================= TIME REALTIME =================
-setInterval(() => {
-  const now = new Date();
+let tempData = {
+  labels: [],
+  datasets: [{
+    label: "Temperature (°C)",
+    data: [],
+    borderWidth: 2,
+    fill: false,
+    tension: 0.3
+  }]
+};
 
-  const jam = String(now.getHours()).padStart(2, '0');
-  const menit = String(now.getMinutes()).padStart(2, '0');
+const tempChart = new Chart(ctx, {
+  type: "line",
+  data: tempData,
+  options: {
+    responsive: true,
+    scales: {
+      y: { beginAtZero: false }
+    }
+  }
+});
 
-  timeEl.innerText = ${jam}:${menit};
-}, 1000);
-
-// ================= TEMPERATURE =================
-db.ref("coolbox/temperature_c").on("value", (snap) => {
-  let temp = snap.val();
-
-  if (temp === null || temp === undefined) return;
-
-  temp = parseFloat(temp);
-  if (isNaN(temp)) return;
+// ================= READ TEMPERATURE =================
+database.ref("coolbox/temperature_c").on("value", (snapshot) => {
+  const temp = snapshot.val();
+  if (temp == null) return;
 
   tempEl.innerText = temp.toFixed(1);
 
-  updateStatus(temp);
-});
+  const time = new Date().toLocaleTimeString();
 
-// ================= MODE =================
-db.ref("coolbox/mode").on("value", (snap) => {
-  let mode = snap.val();
+  if (tempData.labels.length > 10) {
+    tempData.labels.shift();
+    tempData.datasets[0].data.shift();
+  }
 
-  currentMode = parseInt(mode);
-  if (isNaN(currentMode)) currentMode = 0;
+  tempData.labels.push(time);
+  tempData.datasets[0].data.push(temp);
+  tempChart.update();
 
-  if (currentMode === 0) modeEl.innerText = "OFF";
-  else if (currentMode === 1) modeEl.innerText = "2–8°C";
-  else if (currentMode === 2) modeEl.innerText = "8–15°C";
-  else modeEl.innerText = "UNKNOWN";
-});
-
-// ================= STATUS LOGIC MEDIS =================
-function updateStatus(temp) {
+  // ===== STATUS LOGIC =====
+  let mode = currentMode;
 
   let status = "STABLE";
-  let colorClass = "stable";
 
-  if (currentMode === 0) {
-    status = "OFF";
-    colorClass = "off";
-  }
-
-  else if (currentMode === 1) {
-    if (temp > 8) {
-      status = "COOLING";
-      colorClass = "cooling";
-    }
-  }
-
-  else if (currentMode === 2) {
-    if (temp > 15) {
-      status = "COOLING";
-      colorClass = "cooling";
-    }
-  }
-
-  if (temp < 5 && currentMode !== 0) {
-    status = "COLD";
-    colorClass = "cooling";
-  }
+  if (mode == 1 && temp > 8) status = "COOLING";
+  if (mode == 2 && temp > 15) status = "COOLING";
+  if (temp < 5) status = "COLD";
 
   statusEl.innerText = status;
 
-  statusEl.className = "status " + colorClass;
+  if (status === "COOLING") statusEl.style.color = "#f39c12";
+  else if (status === "COLD") statusEl.style.color = "#3498db";
+  else statusEl.style.color = "#7f8c8d";
+});
+
+// ================= MODE =================
+let currentMode = 0;
+
+database.ref("coolbox/mode").on("value", (snapshot) => {
+  currentMode = snapshot.val();
+});
+
+// ================= SET MODE =================
+function setMode(mode) {
+  database.ref("coolbox").update({ mode });
 }
 
-// ================= LOG DATA =================
-db.ref("coolbox/logs").on("value", (snap) => {
+// ================= SIMPAN MANUAL =================
+function simpanManual() {
+  database.ref("coolbox/temperature_c").once("value").then((tempSnap) => {
 
-  logEl.innerHTML = "";
+    const temp = tempSnap.val();
 
-  snap.forEach((child) => {
-    const d = child.val();
+    database.ref("coolbox/logs").push({
+      temperature: temp,
+      mode: currentMode,
+      aksi: "MANUAL_SAVE",
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
 
-    const waktu = d.timestamp
-      ? new Date(d.timestamp).toLocaleString("id-ID")
+    alert("Data berhasil disimpan!");
+  });
+}
+
+// ================= HAPUS SEMUA =================
+function hapusSemua() {
+  if (confirm("Yakin hapus semua logs?")) {
+    database.ref("coolbox/logs").remove();
+  }
+}
+
+// ================= HAPUS SATU =================
+function hapusSatu(key) {
+  database.ref("coolbox/logs/" + key).remove();
+}
+
+// ================= TAMPILKAN LOGS =================
+database.ref("coolbox/logs").on("value", (snapshot) => {
+
+  logTable.innerHTML = "";
+
+  const data = snapshot.val();
+  if (!data) return;
+
+  Object.keys(data).forEach((key) => {
+
+    const item = data[key];
+
+    const waktu = item.timestamp
+      ? new Date(item.timestamp).toLocaleString('id-ID')
       : "-";
 
-    const suhu = (d.temperature !== undefined)
-      ? parseFloat(d.temperature).toFixed(1)
-      : "-";
-
-    const mode = (d.mode !== undefined)
-      ? d.mode
-      : "-";
-
-    const aksi = (d.peltier === true)
-      ? "ON"
-      : "OFF";
-
-    logEl.innerHTML += `
+    logTable.innerHTML += `
       <tr>
         <td>${waktu}</td>
-        <td>${suhu}</td>
-        <td>${mode}</td>
-        <td>${aksi}</td>
+        <td>${item.temperature}</td>
+        <td>${item.mode}</td>
+        <td>${item.aksi || "-"}</td>
       </tr>
     `;
   });
 });
+
+// ================= LOGOUT =================
+function logout() {
+  auth.signOut().then(() => {
+    window.location.href = "index.html";
+  });
+}
