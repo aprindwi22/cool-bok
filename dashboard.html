@@ -2,139 +2,125 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Cool Box Dashboard</title>
+  <title>Medical Cool Box Monitor</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    * { box-sizing: border-box; font-family: "Segoe UI", sans-serif; }
-
-    body {
-      margin: 0;
-      background: linear-gradient(135deg, #1b1f3b, #2d325a);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      padding: 20px;
+    body{
+      margin:0;
+      font-family:Segoe UI;
+      background:#0f172a;
+      color:white;
+      display:flex;
+      justify-content:center;
+      padding:20px;
     }
 
-    .card {
-      width: 95%;
-      max-width: 800px;
-      background: rgba(0,0,0,0.7);
-      padding: 25px;
-      border-radius: 18px;
-      box-shadow: 0 0 30px rgba(0,0,0,0.6);
-      text-align: center;
+    .card{
+      width:100%;
+      max-width:850px;
+      background:#111827;
+      padding:20px;
+      border-radius:16px;
+      box-shadow:0 0 20px rgba(0,0,0,0.6);
     }
 
-    h2 { margin-bottom: 15px; }
-
-    p { margin: 6px 0; font-size: 16px; }
-
-    #status {
-      font-weight: bold;
-      padding: 6px 12px;
-      border-radius: 20px;
-      display: inline-block;
-      margin-top: 5px;
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
     }
 
-    canvas { margin-top: 20px; }
-
-    .btn {
-      width: 100%;
-      padding: 10px;
-      margin-top: 8px;
-      border: none;
-      border-radius: 20px;
-      font-size: 14px;
-      cursor: pointer;
-      color: white;
+    .box{
+      background:#1f2937;
+      padding:12px;
+      border-radius:10px;
     }
 
-    .off { background: #7f8c8d; }
-    .mode1 { background: #f39c12; }
-    .mode2 { background: #3498db; }
-    .save { background: #2ecc71; }
-    .delete { background: #c0392b; }
-    .logout { background: #e74c3c; }
+    .label{font-size:12px;color:#9ca3af;}
+    .value{font-size:18px;font-weight:bold;}
 
-    table {
-      width: 100%;
-      margin-top: 20px;
-      border-collapse: collapse;
-      font-size: 13px;
+    #status{
+      padding:5px 10px;
+      border-radius:8px;
+      display:inline-block;
     }
 
-    table, th, td {
-      border: 1px solid #555;
+    table{
+      width:100%;
+      margin-top:15px;
+      border-collapse:collapse;
+      font-size:13px;
     }
 
-    th, td {
-      padding: 6px;
-      text-align: center;
+    td,th{
+      border:1px solid #374151;
+      padding:6px;
+      text-align:center;
     }
 
-    .footer {
-      margin-top: 15px;
-      font-size: 12px;
-      color: #bbb;
-    }
+    canvas{margin-top:15px;}
   </style>
 </head>
 
 <body>
 
-  <div class="card">
-    <h2>❄️ Cool Box Dashboard</h2>
+<div class="card">
 
-    <p>🌡️ Temperature: <span id="temp">--</span> °C</p>
+  <h2 style="text-align:center;">🏥 MEDICAL COOL BOX</h2>
 
-    <p>Status:</p>
-    <span id="status">--</span>
+  <!-- GRID STATUS -->
+  <div class="grid">
 
-    <!-- Grafik -->
-    <canvas id="tempChart" height="120"></canvas>
-
-    <!-- MODE -->
-    <button class="btn off" onclick="setMode(0)">OFF</button>
-    <button class="btn mode1" onclick="setMode(1)">MODE 1</button>
-    <button class="btn mode2" onclick="setMode(2)">MODE 2</button>
-
-    <!-- FITUR -->
-    <button class="btn save" onclick="simpanManual()">Simpan Data Sekarang</button>
-    <button class="btn delete" onclick="hapusSemua()">Hapus Semua Logs</button>
-
-    <!-- TABEL RIWAYAT BARU -->
-    <h3 style="margin-top:20px;">Riwayat Data</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Waktu</th>
-          <th>Suhu</th>
-          <th>Mode</th>
-          <th>Aksi</th>
-        </tr>
-      </thead>
-      <tbody id="logTable"></tbody>
-    </table>
-
-    <button class="btn logout" onclick="logout()">LOGOUT</button>
-
-    <div class="footer">
-      Cool Box Monitoring System
+    <div class="box">
+      <div class="label">WAKTU</div>
+      <div class="value" id="time">--:--</div>
     </div>
+
+    <div class="box">
+      <div class="label">SUHU</div>
+      <div class="value"><span id="temp">--</span> °C</div>
+    </div>
+
+    <div class="box">
+      <div class="label">MODE</div>
+      <div class="value" id="mode">-</div>
+    </div>
+
+    <div class="box">
+      <div class="label">STATUS</div>
+      <div class="value">
+        <span id="status">--</span>
+      </div>
+    </div>
+
   </div>
 
-  <script src="dashboard.js"></script>
+  <!-- CHART -->
+  <canvas id="tempChart"></canvas>
+
+  <!-- LOG -->
+  <h3>Log Data</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Waktu</th>
+        <th>Suhu</th>
+        <th>Mode</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody id="log"></tbody>
+  </table>
+
+</div>
+
+<script src="dashboard.js"></script>
+
 </body>
 </html>
