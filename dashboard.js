@@ -23,7 +23,6 @@ auth.onAuthStateChanged((user) => {
 
 // ================= ELEMENT =================
 const tempEl = document.getElementById("temp");
-const humEl = document.getElementById("hum");
 const statusEl = document.getElementById("status");
 const logTable = document.getElementById("logTable");
 
@@ -58,6 +57,7 @@ database.ref("coolbox/temperature_c").on("value", (snapshot) => {
   if (temp == null) return;
 
   tempEl.innerText = temp.toFixed(1);
+
   const time = new Date().toLocaleTimeString();
 
   if (tempData.labels.length > 10) {
@@ -68,25 +68,28 @@ database.ref("coolbox/temperature_c").on("value", (snapshot) => {
   tempData.labels.push(time);
   tempData.datasets[0].data.push(temp);
   tempChart.update();
-});
 
-// ================= READ HUMIDITY =================
-database.ref("coolbox/humidity").on("value", (snapshot) => {
-  humEl.innerText = snapshot.val();
-});
+  // ===== STATUS LOGIC =====
+  let mode = currentMode;
 
-// ================= READ STATUS =================
-database.ref("coolbox/relay_status").on("value", (snapshot) => {
-  const status = snapshot.val();
+  let status = "STABLE";
+
+  if (mode == 1 && temp > 8) status = "COOLING";
+  if (mode == 2 && temp > 15) status = "COOLING";
+  if (temp < 5) status = "COLD";
+
   statusEl.innerText = status;
 
-  if (status === "MODE_18_25_ACTIVE") {
-    statusEl.style.color = "#f39c12";
-  } else if (status === "MODE_8_15_ACTIVE") {
-    statusEl.style.color = "#3498db";
-  } else {
-    statusEl.style.color = "#7f8c8d";
-  }
+  if (status === "COOLING") statusEl.style.color = "#f39c12";
+  else if (status === "COLD") statusEl.style.color = "#3498db";
+  else statusEl.style.color = "#7f8c8d";
+});
+
+// ================= MODE =================
+let currentMode = 0;
+
+database.ref("coolbox/mode").on("value", (snapshot) => {
+  currentMode = snapshot.val();
 });
 
 // ================= SET MODE =================
@@ -96,17 +99,14 @@ function setMode(mode) {
 
 // ================= SIMPAN MANUAL =================
 function simpanManual() {
-  Promise.all([
-    database.ref("coolbox/temperature_c").once("value"),
-    database.ref("coolbox/humidity").once("value")
-  ]).then(([tempSnap, humSnap]) => {
+  database.ref("coolbox/temperature_c").once("value").then((tempSnap) => {
 
     const temp = tempSnap.val();
-    const hum = humSnap.val();
 
     database.ref("coolbox/logs").push({
       temperature: temp,
-      humidity: hum,
+      mode: currentMode,
+      aksi: "MANUAL_SAVE",
       timestamp: firebase.database.ServerValue.TIMESTAMP
     });
 
@@ -137,18 +137,17 @@ database.ref("coolbox/logs").on("value", (snapshot) => {
   Object.keys(data).forEach((key) => {
 
     const item = data[key];
-    const waktu = item.timestamp 
-  ? new Date(item.timestamp).toLocaleString('id-ID')
-  : "-";
+
+    const waktu = item.timestamp
+      ? new Date(item.timestamp).toLocaleString('id-ID')
+      : "-";
 
     logTable.innerHTML += `
       <tr>
         <td>${waktu}</td>
         <td>${item.temperature}</td>
-        <td>${item.humidity}</td>
-        <td>
-          <button onclick="hapusSatu('${key}')">Hapus</button>
-        </td>
+        <td>${item.mode}</td>
+        <td>${item.aksi || "-"}</td>
       </tr>
     `;
   });
@@ -160,4 +159,3 @@ function logout() {
     window.location.href = "index.html";
   });
 }
-
