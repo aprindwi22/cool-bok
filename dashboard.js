@@ -11,6 +11,7 @@ const firebaseConfig = {
 
 // ================= INIT =================
 firebase.initializeApp(firebaseConfig);
+
 const auth = firebase.auth();
 const database = firebase.database();
 
@@ -46,43 +47,11 @@ const tempChart = new Chart(ctx, {
   options: {
     responsive: true,
     scales: {
-      y: { beginAtZero: false }
+      y: {
+        beginAtZero: false
+      }
     }
   }
-});
-
-// ================= READ TEMPERATURE =================
-database.ref("coolbox/temperature_c").on("value", (snapshot) => {
-  const temp = snapshot.val();
-  if (temp == null) return;
-
-  tempEl.innerText = temp.toFixed(1);
-
-  const time = new Date().toLocaleTimeString();
-
-  if (tempData.labels.length > 10) {
-    tempData.labels.shift();
-    tempData.datasets[0].data.shift();
-  }
-
-  tempData.labels.push(time);
-  tempData.datasets[0].data.push(temp);
-  tempChart.update();
-
-  // ===== STATUS LOGIC =====
-  let mode = currentMode;
-
-  let status = "STABLE";
-
-  if (mode == 1 && temp > 8) status = "COOLING";
-  if (mode == 2 && temp > 15) status = "COOLING";
-  if (temp < 5) status = "COLD";
-
-  statusEl.innerText = status;
-
-  if (status === "COOLING") statusEl.style.color = "#f39c12";
-  else if (status === "COLD") statusEl.style.color = "#3498db";
-  else statusEl.style.color = "#7f8c8d";
 });
 
 // ================= MODE =================
@@ -92,38 +61,96 @@ database.ref("coolbox/mode").on("value", (snapshot) => {
   currentMode = snapshot.val();
 });
 
+// ================= READ TEMPERATURE =================
+database.ref("coolbox/temperature_c").on("value", (snapshot) => {
+
+  const temp = snapshot.val();
+
+  if (temp == null) return;
+
+  tempEl.innerText = parseFloat(temp).toFixed(1);
+
+  // ===== GRAFIK =====
+  const time = new Date().toLocaleTimeString();
+
+  if (tempData.labels.length > 10) {
+    tempData.labels.shift();
+    tempData.datasets[0].data.shift();
+  }
+
+  tempData.labels.push(time);
+  tempData.datasets[0].data.push(temp);
+
+  tempChart.update();
+
+  // ===== STATUS =====
+  let status = "STABLE";
+
+  if (currentMode == 1 && temp > 8) {
+    status = "COOLING";
+  }
+
+  if (currentMode == 2 && temp > 15) {
+    status = "COOLING";
+  }
+
+  if (temp < 5) {
+    status = "COLD";
+  }
+
+  statusEl.innerText = status;
+
+  if (status === "COOLING") {
+    statusEl.style.color = "#f39c12";
+  }
+  else if (status === "COLD") {
+    statusEl.style.color = "#3498db";
+  }
+  else {
+    statusEl.style.color = "#7f8c8d";
+  }
+});
+
 // ================= SET MODE =================
 function setMode(mode) {
-  database.ref("coolbox").update({ mode });
+
+  database.ref("coolbox").update({
+    mode: mode
+  });
+
 }
 
 // ================= SIMPAN MANUAL =================
 function simpanManual() {
-  database.ref("coolbox/temperature_c").once("value").then((tempSnap) => {
 
-    const temp = tempSnap.val();
+  database.ref("coolbox/temperature_c")
+    .once("value")
+    .then((tempSnap) => {
 
-    database.ref("coolbox/logs").push({
-      temperature: temp,
-      mode: currentMode,
-      aksi: "MANUAL_SAVE",
-      timestamp: firebase.database.ServerValue.TIMESTAMP
+      const temp = tempSnap.val();
+
+      database.ref("coolbox/logs").push({
+        temperature: temp,
+        mode: currentMode,
+        aksi: "MANUAL_SAVE",
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      });
+
+      alert("Data berhasil disimpan!");
+
     });
 
-    alert("Data berhasil disimpan!");
-  });
 }
 
 // ================= HAPUS SEMUA =================
 function hapusSemua() {
-  if (confirm("Yakin hapus semua logs?")) {
-    database.ref("coolbox/logs").remove();
-  }
-}
 
-// ================= HAPUS SATU =================
-function hapusSatu(key) {
-  database.ref("coolbox/logs/" + key).remove();
+  if (confirm("Yakin hapus semua logs?")) {
+
+    database.ref("coolbox/logs").remove();
+
+  }
+
 }
 
 // ================= TAMPILKAN LOGS =================
@@ -132,6 +159,7 @@ database.ref("coolbox/logs").on("value", (snapshot) => {
   logTable.innerHTML = "";
 
   const data = snapshot.val();
+
   if (!data) return;
 
   Object.keys(data).forEach((key) => {
@@ -139,23 +167,98 @@ database.ref("coolbox/logs").on("value", (snapshot) => {
     const item = data[key];
 
     const waktu = item.timestamp
-      ? new Date(item.timestamp).toLocaleString('id-ID')
+      ? new Date(item.timestamp).toLocaleString("id-ID")
       : "-";
+
+    let modeText = "-";
+
+    if (item.mode == 0) modeText = "OFF";
+    else if (item.mode == 1) modeText = "2-8C";
+    else if (item.mode == 2) modeText = "8-15C";
 
     logTable.innerHTML += `
       <tr>
         <td>${waktu}</td>
         <td>${item.temperature}</td>
-        <td>${item.mode}</td>
+        <td>${modeText}</td>
         <td>${item.aksi || "-"}</td>
       </tr>
     `;
+
   });
+
 });
+
+// ================= EXPORT CSV =================
+function exportCSV() {
+
+  database.ref("coolbox/logs")
+    .once("value")
+    .then((snapshot) => {
+
+      const data = snapshot.val();
+
+      if (!data) {
+        alert("Data kosong!");
+        return;
+      }
+
+      let csv = "Waktu,Suhu,Mode,Aksi\n";
+
+      Object.keys(data).forEach((key) => {
+
+        const item = data[key];
+
+        const waktu = item.timestamp
+          ? new Date(item.timestamp).toLocaleString("id-ID")
+          : "-";
+
+        const suhu = item.temperature ?? "-";
+
+        let modeText = "-";
+
+        if (item.mode == 0) modeText = "OFF";
+        else if (item.mode == 1) modeText = "2-8C";
+        else if (item.mode == 2) modeText = "8-15C";
+
+        const aksi = item.aksi || "-";
+
+        csv += "${waktu}","${suhu}","${modeText}","${aksi}"\n;
+
+      });
+
+      // ===== DOWNLOAD FILE =====
+      const blob = new Blob(
+        [csv],
+        { type: "text/csv;charset=utf-8;" }
+      );
+
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = "coolbox_logs.csv";
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+
+    });
+
+}
 
 // ================= LOGOUT =================
 function logout() {
+
   auth.signOut().then(() => {
+
     window.location.href = "index.html";
+
   });
+
 }
