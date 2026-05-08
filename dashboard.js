@@ -11,66 +11,62 @@ const firebaseConfig = {
 
 // ================= INIT =================
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const db = firebase.database();
 
-// SAFE GET ELEMENT
-function get(id) {
-  return document.getElementById(id);
-}
+// ================= ELEMENT =================
+const tempEl = document.getElementById("temp");
+const statusEl = document.getElementById("status");
+const logEl = document.getElementById("logTable");
 
-const tempEl = get("temp");
-const timeEl = get("time");
-const modeEl = get("mode");
-const statusEl = get("status");
-const logEl = get("logTable");
-
-let currentMode = 0;
-
-// ================= TIME =================
-function updateTime() {
-  const now = new Date();
-  const jam = String(now.getHours()).padStart(2, '0');
-  const menit = String(now.getMinutes()).padStart(2, '0');
-
-  if (timeEl) timeEl.innerText = ${jam}:${menit};
-}
-setInterval(updateTime, 1000);
-updateTime();
-
-// ================= MODE =================
-db.ref("coolbox/mode").on("value", (snap) => {
-  currentMode = parseInt(snap.val()) || 0;
-
-  if (!modeEl) return;
-
-  if (currentMode === 0) modeEl.innerText = "OFF";
-  else if (currentMode === 1) modeEl.innerText = "2–8°C";
-  else if (currentMode === 2) modeEl.innerText = "8–15°C";
+// ================= LOGIN CHECK =================
+auth.onAuthStateChanged((user) => {
+  if (!user) {
+    window.location.href = "index.html";
+  }
 });
 
-// ================= TEMP =================
+// ================= MODE =================
+let currentMode = 0;
+
+db.ref("coolbox/mode").on("value", (snap) => {
+  currentMode = Number(snap.val()) || 0;
+});
+
+// ================= TEMPERATURE =================
 db.ref("coolbox/temperature_c").on("value", (snap) => {
-  let temp = parseFloat(snap.val());
+  const temp = parseFloat(snap.val());
   if (isNaN(temp)) return;
 
   if (tempEl) tempEl.innerText = temp.toFixed(1);
+
   updateStatus(temp);
 });
 
-// ================= STATUS =================
+// ================= STATUS LOGIC =================
 function updateStatus(temp) {
   if (!statusEl) return;
 
   let status = "STABLE";
 
-  if (currentMode === 0) status = "OFF";
-  else if (temp > 8 && currentMode === 1) status = "COOLING";
-  else if (temp > 15 && currentMode === 2) status = "COOLING";
+  if (currentMode === 0) {
+    status = "OFF";
+  } 
+  else if (currentMode === 1) {
+    status = temp > 8 ? "COOLING" : "STABLE";
+  } 
+  else if (currentMode === 2) {
+    status = temp > 15 ? "COOLING" : "STABLE";
+  }
+
+  if (temp >= 30) {
+    status = "WARNING";
+  }
 
   statusEl.innerText = status;
 }
 
-// ================= LOG =================
+// ================= LOG DATA =================
 db.ref("coolbox/logs").on("value", (snap) => {
   if (!logEl) return;
 
@@ -80,11 +76,16 @@ db.ref("coolbox/logs").on("value", (snap) => {
     const d = child.val();
 
     const waktu = d.timestamp
-      ? new Date(d.timestamp).toLocaleString("id-ID")
-      : "-";
+      ? new Date(d.timestamp).toLocaleString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+          day: "2-digit",
+          month: "2-digit"
+        })
+      : "--";
 
-    const suhu = d.temperature ?? "-";
-    const mode = d.mode ?? "-";
+    const suhu = d.temperature !== undefined ? Number(d.temperature).toFixed(1) : "--";
+    const mode = d.mode ?? "--";
     const aksi = d.peltier ? "ON" : "OFF";
 
     logEl.innerHTML += `
@@ -98,11 +99,12 @@ db.ref("coolbox/logs").on("value", (snap) => {
   });
 });
 
-// ================= BUTTON FUNCTIONS (WAJIB ADA) =================
+// ================= SET MODE =================
 function setMode(mode) {
   db.ref("coolbox").update({ mode });
 }
 
+// ================= SIMPAN MANUAL =================
 function simpanManual() {
   db.ref("coolbox").once("value").then((snap) => {
     const d = snap.val();
@@ -116,14 +118,16 @@ function simpanManual() {
   });
 }
 
+// ================= HAPUS LOG =================
 function hapusSemua() {
   if (confirm("Hapus semua data?")) {
     db.ref("coolbox/logs").remove();
   }
 }
 
+// ================= LOGOUT =================
 function logout() {
-  firebase.auth().signOut().then(() => {
+  auth.signOut().then(() => {
     window.location.href = "index.html";
   });
 }
