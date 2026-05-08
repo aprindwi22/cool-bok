@@ -11,151 +11,121 @@ const firebaseConfig = {
 
 // ================= INIT =================
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const database = firebase.database();
-
-// ================= CEK LOGIN =================
-auth.onAuthStateChanged((user) => {
-  if (!user) {
-    window.location.href = "index.html";
-  }
-});
+const db = firebase.database();
 
 // ================= ELEMENT =================
 const tempEl = document.getElementById("temp");
+const timeEl = document.getElementById("time");
+const modeEl = document.getElementById("mode");
 const statusEl = document.getElementById("status");
-const logTable = document.getElementById("logTable");
+const logEl = document.getElementById("log");
 
-// ================= CHART =================
-const ctx = document.getElementById("tempChart").getContext("2d");
+// ================= GLOBAL =================
+let currentMode = 0;
 
-let tempData = {
-  labels: [],
-  datasets: [{
-    label: "Temperature (°C)",
-    data: [],
-    borderWidth: 2,
-    fill: false,
-    tension: 0.3
-  }]
-};
+// ================= TIME REALTIME =================
+setInterval(() => {
+  const now = new Date();
 
-const tempChart = new Chart(ctx, {
-  type: "line",
-  data: tempData,
-  options: {
-    responsive: true,
-    scales: {
-      y: { beginAtZero: false }
-    }
-  }
-});
+  const jam = String(now.getHours()).padStart(2, '0');
+  const menit = String(now.getMinutes()).padStart(2, '0');
 
-// ================= READ TEMPERATURE =================
-database.ref("coolbox/temperature_c").on("value", (snapshot) => {
-  const temp = snapshot.val();
-  if (temp == null) return;
+  timeEl.innerText = ${jam}:${menit};
+}, 1000);
+
+// ================= TEMPERATURE =================
+db.ref("coolbox/temperature_c").on("value", (snap) => {
+  let temp = snap.val();
+
+  if (temp === null || temp === undefined) return;
+
+  temp = parseFloat(temp);
+  if (isNaN(temp)) return;
 
   tempEl.innerText = temp.toFixed(1);
 
-  const time = new Date().toLocaleTimeString();
-
-  if (tempData.labels.length > 10) {
-    tempData.labels.shift();
-    tempData.datasets[0].data.shift();
-  }
-
-  tempData.labels.push(time);
-  tempData.datasets[0].data.push(temp);
-  tempChart.update();
-
-  // ===== STATUS LOGIC =====
-  let mode = currentMode;
-
-  let status = "STABLE";
-
-  if (mode == 1 && temp > 8) status = "COOLING";
-  if (mode == 2 && temp > 15) status = "COOLING";
-  if (temp < 5) status = "COLD";
-
-  statusEl.innerText = status;
-
-  if (status === "COOLING") statusEl.style.color = "#f39c12";
-  else if (status === "COLD") statusEl.style.color = "#3498db";
-  else statusEl.style.color = "#7f8c8d";
+  updateStatus(temp);
 });
 
 // ================= MODE =================
-let currentMode = 0;
+db.ref("coolbox/mode").on("value", (snap) => {
+  let mode = snap.val();
 
-database.ref("coolbox/mode").on("value", (snapshot) => {
-  currentMode = snapshot.val();
+  currentMode = parseInt(mode);
+  if (isNaN(currentMode)) currentMode = 0;
+
+  if (currentMode === 0) modeEl.innerText = "OFF";
+  else if (currentMode === 1) modeEl.innerText = "2–8°C";
+  else if (currentMode === 2) modeEl.innerText = "8–15°C";
+  else modeEl.innerText = "UNKNOWN";
 });
 
-// ================= SET MODE =================
-function setMode(mode) {
-  database.ref("coolbox").update({ mode });
-}
+// ================= STATUS LOGIC MEDIS =================
+function updateStatus(temp) {
 
-// ================= SIMPAN MANUAL =================
-function simpanManual() {
-  database.ref("coolbox/temperature_c").once("value").then((tempSnap) => {
+  let status = "STABLE";
+  let colorClass = "stable";
 
-    const temp = tempSnap.val();
-
-    database.ref("coolbox/logs").push({
-      temperature: temp,
-      mode: currentMode,
-      aksi: "MANUAL_SAVE",
-      timestamp: firebase.database.ServerValue.TIMESTAMP
-    });
-
-    alert("Data berhasil disimpan!");
-  });
-}
-
-// ================= HAPUS SEMUA =================
-function hapusSemua() {
-  if (confirm("Yakin hapus semua logs?")) {
-    database.ref("coolbox/logs").remove();
+  if (currentMode === 0) {
+    status = "OFF";
+    colorClass = "off";
   }
+
+  else if (currentMode === 1) {
+    if (temp > 8) {
+      status = "COOLING";
+      colorClass = "cooling";
+    }
+  }
+
+  else if (currentMode === 2) {
+    if (temp > 15) {
+      status = "COOLING";
+      colorClass = "cooling";
+    }
+  }
+
+  if (temp < 5 && currentMode !== 0) {
+    status = "COLD";
+    colorClass = "cooling";
+  }
+
+  statusEl.innerText = status;
+
+  statusEl.className = "status " + colorClass;
 }
 
-// ================= HAPUS SATU =================
-function hapusSatu(key) {
-  database.ref("coolbox/logs/" + key).remove();
-}
+// ================= LOG DATA =================
+db.ref("coolbox/logs").on("value", (snap) => {
 
-// ================= TAMPILKAN LOGS =================
-database.ref("coolbox/logs").on("value", (snapshot) => {
+  logEl.innerHTML = "";
 
-  logTable.innerHTML = "";
+  snap.forEach((child) => {
+    const d = child.val();
 
-  const data = snapshot.val();
-  if (!data) return;
-
-  Object.keys(data).forEach((key) => {
-
-    const item = data[key];
-
-    const waktu = item.timestamp
-      ? new Date(item.timestamp).toLocaleString('id-ID')
+    const waktu = d.timestamp
+      ? new Date(d.timestamp).toLocaleString("id-ID")
       : "-";
 
-    logTable.innerHTML += `
+    const suhu = (d.temperature !== undefined)
+      ? parseFloat(d.temperature).toFixed(1)
+      : "-";
+
+    const mode = (d.mode !== undefined)
+      ? d.mode
+      : "-";
+
+    const aksi = (d.peltier === true)
+      ? "ON"
+      : "OFF";
+
+    logEl.innerHTML += `
       <tr>
         <td>${waktu}</td>
-        <td>${item.temperature}</td>
-        <td>${item.mode}</td>
-        <td>${item.aksi || "-"}</td>
+        <td>${suhu}</td>
+        <td>${mode}</td>
+        <td>${aksi}</td>
       </tr>
     `;
   });
 });
-
-// ================= LOGOUT =================
-function logout() {
-  auth.signOut().then(() => {
-    window.location.href = "index.html";
-  });
-}
